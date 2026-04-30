@@ -1,5 +1,5 @@
 {
-  "name": "MBOX Email Address Extractor",
+  "name": "iLyF Email Recovery & Extractor",
   "description": "Extract email addresses from MBOX files locally in your browser. Supports deduplication, date filtering, and exporting to CSV.",
   "requestFramePermissions": [],
   "majorCapabilities": []

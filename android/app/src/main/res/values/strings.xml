@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">vMail Extractor</string>
+    <string name="title_activity_main">vMail Extractor</string>
+    <string name="package_name">com.vmail.extractor</string>
+    <string name="custom_url_scheme">com.vmail.extractor</string>
+</resources>

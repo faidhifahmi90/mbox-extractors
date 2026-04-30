@@ -9,7 +9,10 @@ export interface ExtractedAttachment {
   mimeType: string;
   data: string; // base64 string
   sender?: string;
+  subject?: string;
   date?: string; // ISO date string
+  size: number; // Size in bytes
+  sourceFileId?: string;
 }
 
 export interface ParsedMessage {
@@ -21,6 +24,7 @@ export interface ParsedMessage {
   body: string;
   htmlBody: string | null;
   attachmentCount: number;
+  sourceFileId?: string;
 }
 
 export interface ExtractorOptions {
@@ -190,7 +194,9 @@ export async function extractEmailsFromMbox(
                        mimeType,
                        data: base64Data,
                        sender,
-                       date: msgDate && !isNaN(msgDate.getTime()) ? msgDate.toISOString() : undefined
+                       subject,
+                       date: msgDate && !isNaN(msgDate.getTime()) ? msgDate.toISOString() : undefined,
+                       size: Math.floor(base64Data.length * 0.75)
                      });
                    }
                  }
