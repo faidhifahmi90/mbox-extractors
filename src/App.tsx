@@ -14,6 +14,8 @@ import { checkTrialUsed, markTrialUsed } from './lib/deviceTracking';
 
 import { loadRazorpayScript } from './lib/razorpay';
 
+import { PolicyModal } from './components/PolicyModal';
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -24,6 +26,7 @@ export default function App() {
   const [passExpiry, setPassExpiry] = useState<number | null>(null);
   const [hasUsedTrial, setHasUsedTrial] = useState<boolean>(false);
   const [region, setRegion] = useState<'MY_SG' | 'ROW' | null>(null);
+  const [policyType, setPolicyType] = useState<'EULA' | 'TERMS' | 'PRIVACY' | 'REFUND' | null>(null);
 
   React.useEffect(() => {
     checkTrialUsed().then(used => {
@@ -1108,108 +1111,123 @@ export default function App() {
                     </p>
                  </div>
 
-                 <div className="space-y-4 mb-6">
-                    {/* One Time Pass */}
-                    <div className="bg-white border-2 border-slate-200 hover:border-amber-300 rounded-3xl p-5 shadow-sm transition-colors cursor-pointer">
-                       <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-bold text-slate-900 text-lg">24-Hour Pass</h3>
-                          <div className="text-xl font-black text-slate-900">{isMYSG ? 'RM39' : '$17'}<span className="text-sm font-bold text-slate-500">.{isMYSG ? '90' : '99'}</span></div>
-                       </div>
-                       <p className="text-sm border-b border-slate-100 pb-3 mb-3 text-slate-500 leading-relaxed text-left">Perfect for a work, account auditing, court case, or immigration need today.</p>
-                       <ul className="space-y-2 mb-4">
-                          <li className="flex items-center text-xs font-medium text-slate-700">
-                             <CheckCircle2 className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" /> Unlock all features for 24 hours
-                          </li>
-                       </ul>
-                       {isMYSG && (
-                         <button onClick={() => handleUpgrade('day-pass', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-900 text-white shadow-md active:scale-95 transition-transform text-sm">
-                           Get 24-Hour Access via Curlec
-                         </button>
-                       )}
-                       <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                           <button onClick={() => handleUpgrade('day-pass', 'apple')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">🍎</span> App Store
-                           </button>
-                           <button onClick={() => handleUpgrade('day-pass', 'google')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">▶️</span> Google Play
-                           </button>
-                       </div>
-                    </div>
-
-                    {/* Monthly */}
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/10 relative cursor-pointer">
-                       <div className="absolute top-0 right-5 -translate-y-1/2 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                         Most Popular
-                       </div>
-                       <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-bold text-slate-900 text-lg">Monthly Pro</h3>
-                          <div className="flex items-end">
-                            <span className="text-2xl font-black text-slate-900">{isMYSG ? 'RM15' : '$5'}<span className="text-base text-slate-600">.{isMYSG ? '89' : '99'}</span></span>
-                            <span className="text-xs text-slate-500 font-medium ml-1 mb-1.5">/mo</span>
-                          </div>
-                       </div>
-                       <p className="text-sm border-b border-amber-200/50 pb-3 mb-3 text-amber-800 leading-relaxed text-left">Best for researchers or project-based work requiring full extraction capabilities.</p>
-                       <ul className="space-y-2.5 mb-5 mt-2">
-                          {[
-                            'Unlimited email extraction & parsing',
-                            'Process batch folders > 50MB',
-                            'Export all attachments at once',
-                            'Generate offline PDFs of emails',
-                            'Instant full-text offline search'
-                          ].map(feature => (
-                            <li key={feature} className="flex items-start text-xs font-medium text-amber-900">
-                               <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" />
-                               {feature}
+                 {isPro ? (
+                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center mb-6 shadow-sm">
+                     <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                     </div>
+                     <h3 className="text-xl font-bold text-slate-900 mb-2">Active Subscription</h3>
+                     <p className="text-emerald-700 font-medium text-lg mb-1">{getPlanDisplay()}</p>
+                     <button onClick={() => setUserPlan('free')} className="text-sm font-semibold text-slate-500 mt-6 px-6 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm active:scale-95">Cancel Subscription</button>
+                   </div>
+                 ) : (
+                   <div className="space-y-4 mb-6">
+                      {/* One Time Pass */}
+                      <div className="bg-white border-2 border-slate-200 hover:border-amber-300 rounded-3xl p-5 shadow-sm transition-colors cursor-pointer">
+                         <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-slate-900 text-lg">24-Hour Pass</h3>
+                            <div className="text-xl font-black text-slate-900">{isMYSG ? 'RM39' : '$17'}<span className="text-sm font-bold text-slate-500">.{isMYSG ? '90' : '99'}</span></div>
+                         </div>
+                         <p className="text-sm border-b border-slate-100 pb-3 mb-3 text-slate-500 leading-relaxed text-left">Perfect for a work, account auditing, court case, or immigration need today.</p>
+                         <ul className="space-y-2 mb-4">
+                            <li className="flex items-center text-xs font-medium text-slate-700">
+                               <CheckCircle2 className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" /> Unlock all features for 24 hours
                             </li>
-                          ))}
-                       </ul>
-                       {isMYSG && (
-                         <button onClick={() => handleUpgrade('monthly', 'web')} className="w-full font-bold py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg active:scale-95 transition-transform text-sm flex items-center justify-center">
-                           Subscribe via Curlec <ChevronRight className="w-4 h-4 ml-1" />
-                         </button>
-                       )}
-                       <div className="flex gap-2 mt-3 pt-3 border-t border-amber-200/50">
-                           <button onClick={() => handleUpgrade('monthly', 'apple')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">🍎</span> App Store
+                         </ul>
+                         {isMYSG && (
+                           <button onClick={() => handleUpgrade('day-pass', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-900 text-white shadow-md active:scale-95 transition-transform text-sm">
+                             Get 24-Hour Access via Curlec
                            </button>
-                           <button onClick={() => handleUpgrade('monthly', 'google')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">▶️</span> Google Play
-                           </button>
-                       </div>
-                    </div>
+                         )}
+                         <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                             <button onClick={() => handleUpgrade('day-pass', 'apple')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">🍎</span> App Store
+                             </button>
+                             <button onClick={() => handleUpgrade('day-pass', 'google')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">▶️</span> Google Play
+                             </button>
+                         </div>
+                      </div>
 
-                    {/* Yearly */}
-                    <div className="bg-white border-2 border-slate-200 hover:border-amber-300 rounded-3xl p-5 shadow-sm transition-colors cursor-pointer">
-                       <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-bold text-slate-900 text-lg">Yearly Pro</h3>
-                          <div className="flex items-end">
-                            <span className="text-xl font-black text-slate-900">{isMYSG ? 'RM119' : '$39'}<span className="text-sm text-slate-600">.{isMYSG ? '89' : '99'}</span></span>
-                            <span className="text-xs text-slate-500 font-medium ml-1 md:mb-0.5">/yr</span>
-                          </div>
-                       </div>
-                       <p className="text-sm text-slate-500 leading-relaxed mb-4 text-left">Best for professionals (lawyers, journalists, accountants) who handle archives regularly.</p>
-                       {isMYSG && (
-                         <button onClick={() => handleUpgrade('yearly', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-100 text-slate-800 shadow-sm hover:bg-slate-200 active:scale-95 transition-transform text-sm">
-                           Subscribe via Curlec
-                         </button>
-                       )}
-                       <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                           <button onClick={() => handleUpgrade('yearly', 'apple')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">🍎</span> App Store
+                      {/* Monthly */}
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/10 relative cursor-pointer">
+                         <div className="absolute top-0 right-5 -translate-y-1/2 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                           Most Popular
+                         </div>
+                         <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-slate-900 text-lg">Monthly Pro</h3>
+                            <div className="flex items-end">
+                              <span className="text-2xl font-black text-slate-900">{isMYSG ? 'RM15' : '$5'}<span className="text-base text-slate-600">.{isMYSG ? '89' : '99'}</span></span>
+                              <span className="text-xs text-slate-500 font-medium ml-1 mb-1.5">/mo</span>
+                            </div>
+                         </div>
+                         <p className="text-sm border-b border-amber-200/50 pb-3 mb-3 text-amber-800 leading-relaxed text-left">Best for researchers or project-based work requiring full extraction capabilities.</p>
+                         <ul className="space-y-2.5 mb-5 mt-2">
+                            {[
+                              'Unlimited email extraction & parsing',
+                              'Process batch folders > 50MB',
+                              'Export all attachments at once',
+                              'Generate offline PDFs of emails',
+                              'Instant full-text offline search'
+                            ].map(feature => (
+                              <li key={feature} className="flex items-start text-xs font-medium text-amber-900">
+                                 <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" />
+                                 {feature}
+                              </li>
+                            ))}
+                         </ul>
+                         {isMYSG && (
+                           <button onClick={() => handleUpgrade('monthly', 'web')} className="w-full font-bold py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg active:scale-95 transition-transform text-sm flex items-center justify-center">
+                             Subscribe via Curlec <ChevronRight className="w-4 h-4 ml-1" />
                            </button>
-                           <button onClick={() => handleUpgrade('yearly', 'google')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                              <span className="mr-1 mt-0.5">▶️</span> Google Play
-                           </button>
-                       </div>
-                    </div>
-                 </div>
+                         )}
+                         <div className="flex gap-2 mt-3 pt-3 border-t border-amber-200/50">
+                             <button onClick={() => handleUpgrade('monthly', 'apple')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">🍎</span> App Store
+                             </button>
+                             <button onClick={() => handleUpgrade('monthly', 'google')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">▶️</span> Google Play
+                             </button>
+                         </div>
+                      </div>
 
-                 {isPro && (
-                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center mt-2">
-                     <p className="text-emerald-700 text-sm font-bold flex items-center justify-center"><CheckCircle2 className="w-4 h-4 mr-2" /> You are currently on the {getPlanDisplay()} plan.</p>
-                     <button onClick={() => setUserPlan('free')} className="text-xs text-emerald-600 mt-2 hover:underline">Cancel Subscription</button>
+                      {/* Yearly */}
+                      <div className="bg-white border-2 border-slate-200 hover:border-amber-300 rounded-3xl p-5 shadow-sm transition-colors cursor-pointer">
+                         <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-slate-900 text-lg">Yearly Pro</h3>
+                            <div className="flex items-end">
+                              <span className="text-xl font-black text-slate-900">{isMYSG ? 'RM119' : '$39'}<span className="text-sm text-slate-600">.{isMYSG ? '89' : '99'}</span></span>
+                              <span className="text-xs text-slate-500 font-medium ml-1 md:mb-0.5">/yr</span>
+                            </div>
+                         </div>
+                         <p className="text-sm text-slate-500 leading-relaxed mb-4 text-left">Best for professionals (lawyers, journalists, accountants) who handle archives regularly.</p>
+                         {isMYSG && (
+                           <button onClick={() => handleUpgrade('yearly', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-100 text-slate-800 shadow-sm hover:bg-slate-200 active:scale-95 transition-transform text-sm">
+                             Subscribe via Curlec
+                           </button>
+                         )}
+                         <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                             <button onClick={() => handleUpgrade('yearly', 'apple')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">🍎</span> App Store
+                             </button>
+                             <button onClick={() => handleUpgrade('yearly', 'google')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+                                <span className="mr-1 mt-0.5">▶️</span> Google Play
+                             </button>
+                         </div>
+                      </div>
                    </div>
                  )}
+
+                 {/* Policy Links */}
+                 <div className="mt-8 mb-4 border-t border-slate-100 pt-6">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-400">
+                       <button onClick={() => setPolicyType('TERMS')} className="hover:text-amber-600 transition-colors relative after:content-[''] after:absolute after:-right-3.5 after:top-1/2 after:-translate-y-1/2 after:w-1 after:h-1 after:bg-slate-300 after:rounded-full last:after:hidden">Terms of Use</button>
+                       <button onClick={() => setPolicyType('PRIVACY')} className="hover:text-amber-600 transition-colors relative after:content-[''] after:absolute after:-right-3.5 after:top-1/2 after:-translate-y-1/2 after:w-1 after:h-1 after:bg-slate-300 after:rounded-full last:after:hidden">Privacy Policy</button>
+                       <button onClick={() => setPolicyType('EULA')} className="hover:text-amber-600 transition-colors relative after:content-[''] after:absolute after:-right-3.5 after:top-1/2 after:-translate-y-1/2 after:w-1 after:h-1 after:bg-slate-300 after:rounded-full last:after:hidden">EULA</button>
+                       <button onClick={() => setPolicyType('REFUND')} className="hover:text-amber-600 transition-colors relative">Refund Policy</button>
+                    </div>
+                    <p className="text-center text-[10px] text-slate-400 mt-6">&copy; 2026 Syncwealth Sdn Bhd. All rights reserved.</p>
+                 </div>
               </motion.div>
             )}
 
@@ -1256,6 +1274,7 @@ export default function App() {
 
         </nav>
 
+        <PolicyModal policyType={policyType} onClose={() => setPolicyType(null)} />
       </div>
     </div>
   );
