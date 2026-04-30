@@ -51,5 +51,5 @@ We may update this Statement to reflect changes in our app's functionality. The 
 If you have any questions regarding this Privacy Statement or the security of iLyFExtract, please contact us:
 
 **Syncwealth Sdn Bhd**
-Email: [Your Support Email Address]
+Email: support@ilyf.io
 Jurisdiction: Malaysia

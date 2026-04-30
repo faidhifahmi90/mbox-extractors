@@ -29,7 +29,7 @@ iLyFExtract is a localized processing tool. As such, Syncwealth Sdn Bhd will not
 *   **Device Readiness:** Failure to run the app due to the user’s device not fulfilling the minimum system requirements.
 
 ## 4. How to Request a Refund
-To initiate a refund request, please contact our support team at [Your Support Email] with your purchase receipt and a detailed description of the technical issue. If the issue is verified as unresolvable by our team, we will process the refund to your original payment method.
+To initiate a refund request, please contact our support team at support@ilyf.io with your purchase receipt and a detailed description of the technical issue. If the issue is verified as unresolvable by our team, we will process the refund to your original payment method.
 
 ---
 Copyright © 2026 Syncwealth Sdn Bhd. All rights reserved.
