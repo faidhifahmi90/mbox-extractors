@@ -16,7 +16,23 @@ import { loadRazorpayScript } from './lib/razorpay';
 
 import { PolicyModal } from './components/PolicyModal';
 
+const BrandLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="url(#brand-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <defs>
+      <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f97316" /> {/* orange-500 */}
+        <stop offset="50%" stopColor="#ec4899" /> {/* pink-500 */}
+        <stop offset="100%" stopColor="#6366f1" /> {/* indigo-500 */}
+      </linearGradient>
+    </defs>
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M3 6l9 6 9-6" />
+    <path d="M14 14l7 7m0-5v5h-5" />
+  </svg>
+);
+
 export function cn(...inputs: ClassValue[]) {
+
   return twMerge(clsx(inputs));
 }
 
@@ -639,9 +655,12 @@ export default function App() {
         
         {/* Dynamic header area per tab */}
         <div className="bg-white px-6 pt-12 pb-4 shadow-sm z-10 flex-shrink-0 flex justify-between items-center relative gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 capitalize">
-            {activeTab === 'extract' ? 'iLyFExtractor' : activeTab}
-          </h1>
+          <div className="flex items-center">
+            {activeTab === 'extract' && <BrandLogo className="w-5 h-5 mr-1.5" />}
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 capitalize">
+              {activeTab === 'extract' ? 'iLyFExtractor' : activeTab}
+            </h1>
+          </div>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded select-none shrink-0 border border-slate-200 shadow-sm whitespace-nowrap">
                {getPlanDisplay()}
