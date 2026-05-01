@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useDeferredValue } from 'react';
 import JSZip from 'jszip';
-import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { UploadCloud, FileType, CheckCircle2, Download, Settings, Loader2, Search, Paperclip, Crown, Mail, ChevronRight, Inbox, Eye, Calendar, User, AlignLeft, FileText, Lock, X } from 'lucide-react';
 import { extractEmailsFromMbox, ExtractedAttachment, ParsedMessage, ExtractionResult } from './lib/mboxParser';
 import { extractEmailsFromEml } from './lib/emlParser';
@@ -333,21 +334,40 @@ export default function App() {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
-  const exportMessageToPDF = useReactToPrint({
-      contentRef: messageContentRef,
-      documentTitle: getPdfDocumentTitle(),
-      pageStyle: `
-        @page {
-            margin: 20mm;
-        }
-        @media print {
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
-            }
-        }
-      `
-  });
+  const exportMessageToPDF = async () => {
+    if (!messageContentRef.current) return;
+    try {
+      const canvas = await html2canvas(messageContentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${getPdfDocumentTitle()}.pdf`);
+    } catch (error) {
+      console.error('Failed to generate PDF', error);
+      alert('Failed to export PDF.');
+    }
+  };
 
   const handleExtract = async () => {
     const unparsedNodes = fileNodes.filter(n => !n.parsed);
@@ -446,10 +466,10 @@ export default function App() {
 
   const miniSearch = useMemo(() => {
     const searcher = new MiniSearch({
-      fields: ['subject', 'sender', 'date', 'textContent'],
+      fields: ['subject', 'sender', 'date', 'body'],
       storeFields: ['id'],
       searchOptions: {
-        boost: { subject: 2, sender: 1.5, textContent: 1 },
+        boost: { subject: 2, sender: 1.5, body: 1 },
         fuzzy: 0.2
       }
     });
@@ -460,7 +480,7 @@ export default function App() {
         subject: m.subject || '',
         sender: m.sender || '',
         date: m.date || '',
-        textContent: m.textContent || ''
+        body: m.body || ''
       })));
     }
     return searcher;
@@ -694,7 +714,7 @@ export default function App() {
                 
                 <div className="flex flex-col items-center justify-center space-y-4 mt-2">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept=".mbox,.txt,.eml,.pst" className="hidden" />
-                  <input type="file" ref={folderInputRef} onChange={handleFolderChange} webkitdirectory="true" className="hidden" />
+                  <input type="file" ref={folderInputRef} onChange={handleFolderChange} {...({ webkitdirectory: "true", directory: "true" } as any)} className="hidden" />
                   
                   <div className="flex gap-4 w-full">
                     <div 
