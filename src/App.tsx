@@ -45,6 +45,9 @@ export default function App() {
   const [region, setRegion] = useState<'MY_SG' | 'ROW' | null>(null);
   const [policyType, setPolicyType] = useState<'EULA' | 'TERMS' | 'PRIVACY' | 'REFUND' | null>(null);
 
+  const [showSplash, setShowSplash] = useState(false);
+  const [showIcon, setShowIcon] = useState(false);
+
   React.useEffect(() => {
     checkTrialUsed().then(used => {
       setHasUsedTrial(used);
@@ -71,20 +74,7 @@ export default function App() {
   
   const isMYSG = region === 'MY_SG';
 
-  const handleUpgrade = async (plan: 'day-pass' | 'monthly' | 'yearly', method: 'web' | 'apple' | 'google' = 'web') => {
-    if (method !== 'web' || !isMYSG) {
-       // Simulate or show redirect for App Store / Google Play
-       setUserPlan(plan);
-       if (plan === 'day-pass') {
-          setPassExpiry(Date.now() + 24 * 60 * 60 * 1000);
-       } else {
-          setPassExpiry(null);
-       }
-       alert(`Directed to ${method === 'apple' ? 'App Store' : 'Google Play'}. Plan activated for preview purposes.`);
-       setActiveTab('extract');
-       return;
-    }
-
+  const handleUpgrade = async (plan: 'day-pass' | 'monthly' | 'yearly') => {
     const prices = {
       'day-pass': 39.90,
       'monthly': 15.89,
@@ -202,7 +192,7 @@ export default function App() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const { results, attachments, messages, totalEmailsFound } = useMemo(() => {
+  const { results, attachments, messages, totalEmailsFound, hasAnyMessages, hasAnyAttachments } = useMemo(() => {
     const recordsToUse = activeFileIds.size > 0 ? extractedRecords.filter(r => activeFileIds.has(r.id)) : extractedRecords;
     let allEmails = new Set<string>();
     let allEmailsWithDupes: string[] = [];
@@ -220,22 +210,28 @@ export default function App() {
       tCount += r.emails.length;
     }
     
-    const dFrom = dateFrom ? new Date(dateFrom).getTime() : 0;
-    const dTo = dateTo ? new Date(dateTo).getTime() : Infinity;
+    const parseLocalDate = (dateStr: string, isEndOfDay: boolean) => {
+       if (!dateStr) return isEndOfDay ? Infinity : 0;
+       const [y, m, d] = dateStr.split('-').map(Number);
+       return new Date(y, m - 1, d, isEndOfDay ? 23 : 0, isEndOfDay ? 59 : 0, isEndOfDay ? 59 : 0, isEndOfDay ? 999 : 0).getTime();
+    };
+    
+    const dFrom = parseLocalDate(dateFrom, false);
+    const dTo = parseLocalDate(dateTo, true);
 
     let filteredMessages = allMessages;
     let filteredAttachments = allAttachments;
 
     if (dateFrom || dateTo) {
       filteredMessages = allMessages.filter(m => {
-         if (!m.date) return true;
-         const t = new Date(m.date).getTime();
-         return t >= dFrom && t <= dTo;
+         if (!m.timestamp) return true;
+         return m.timestamp >= dFrom && m.timestamp <= dTo;
       });
 
       filteredAttachments = allAttachments.filter(a => {
          if (!a.date) return true;
          const t = new Date(a.date).getTime();
+         if (isNaN(t)) return true;
          return t >= dFrom && t <= dTo;
       });
     }
@@ -248,7 +244,7 @@ export default function App() {
     });
 
     const finalResults = removeDuplicates ? Array.from(allEmails) : allEmailsWithDupes;
-    return { results: finalResults, attachments: filteredAttachments, messages: filteredMessages, totalEmailsFound: tCount };
+    return { results: finalResults, attachments: filteredAttachments, messages: filteredMessages, totalEmailsFound: tCount, hasAnyMessages: allMessages.length > 0, hasAnyAttachments: allAttachments.length > 0 };
   }, [extractedRecords, activeFileIds, removeDuplicates, dateFrom, dateTo]);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
@@ -669,9 +665,9 @@ export default function App() {
   }, [attachments, attachmentGroupBy]);
 
   return (
-    <div className="bg-slate-900 min-h-screen flex items-center justify-center sm:p-6 md:p-12">
-      {/* Mobile Device Frame styling */}
-      <div className="w-full h-[100dvh] sm:h-[800px] sm:max-w-[400px] bg-slate-50 relative flex flex-col sm:rounded-[2.5rem] shadow-2xl overflow-hidden ring-1 ring-slate-900/10">
+    <div className="bg-slate-950 min-h-screen flex flex-col items-center justify-center sm:p-6 md:p-12">
+      {/* Responsive Container styling */}
+      <div className="w-full h-[100dvh] sm:h-[85vh] max-w-full sm:max-w-3xl md:max-w-5xl lg:max-w-6xl bg-slate-50 relative flex flex-col sm:rounded-3xl shadow-2xl overflow-hidden ring-1 ring-slate-900/10 transition-all duration-300">
         
         {/* Dynamic header area per tab */}
         <div className="bg-white px-6 pt-12 pb-4 shadow-sm z-10 flex-shrink-0 flex justify-between items-center relative gap-2">
@@ -716,7 +712,7 @@ export default function App() {
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept=".mbox,.txt,.eml,.pst" className="hidden" />
                   <input type="file" ref={folderInputRef} onChange={handleFolderChange} {...({ webkitdirectory: "true", directory: "true" } as any)} className="hidden" />
                   
-                  <div className="flex gap-4 w-full">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all shadow-sm active:scale-95"
@@ -736,6 +732,26 @@ export default function App() {
                       </div>
                       <span className="font-semibold text-slate-800">Select Folder</span>
                       <span className="text-xs text-slate-500 mt-1">Batch Process</span>
+                    </div>
+                    <div 
+                      onClick={() => setShowSplash(true)}
+                      className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-pink-400 hover:bg-pink-50 transition-all shadow-sm active:scale-95"
+                    >
+                      <div className="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mb-3">
+                        <Eye className="w-6 h-6" />
+                      </div>
+                      <span className="font-semibold text-slate-800">Preview Splash</span>
+                      <span className="text-xs text-slate-500 mt-1">Dev Tools</span>
+                    </div>
+                    <div 
+                      onClick={() => setShowIcon(true)}
+                      className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm active:scale-95"
+                    >
+                      <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
+                        <Crown className="w-6 h-6" />
+                      </div>
+                      <span className="font-semibold text-slate-800">Preview Icon</span>
+                      <span className="text-xs text-slate-500 mt-1">Dev Tools</span>
                     </div>
                   </div>
 
@@ -875,9 +891,9 @@ export default function App() {
                       </div>
                     </div>
                     
-                    <ul className="flex-1 overflow-y-auto divide-y divide-slate-100 pb-28">
+                    <ul className="flex-1 overflow-y-auto divide-y divide-slate-100 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:p-4 pb-28">
                        {filteredResults.map((email, idx) => (
-                         <label key={idx} className="flex items-center px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
+                         <label key={idx} className="flex items-center px-5 py-4 md:py-3 md:px-4 md:border md:border-slate-100 md:rounded-xl md:shadow-sm bg-white hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
                             <input type="checkbox" checked={selectedEmails.has(email)} onChange={() => toggleEmailSelection(email)} className="w-5 h-5 rounded text-blue-600 border-slate-300 mr-4 flex-shrink-0" />
                             <span className="text-sm font-mono text-slate-700 truncate">{email}</span>
                          </label>
@@ -963,7 +979,7 @@ export default function App() {
                         </div>
                      </div>
                   </div>
-                ) : messages.length > 0 ? (
+                ) : hasAnyMessages ? (
                   <div className="flex flex-col h-full bg-white">
                     <div className="px-5 py-4 border-b border-slate-100 space-y-4 flex-shrink-0 bg-white z-10">
                       <div className="relative">
@@ -996,11 +1012,14 @@ export default function App() {
                       )}
                     </div>
                     
-                    <ul className="flex-1 overflow-y-auto divide-y divide-slate-100 pb-20">
+                    <ul className="flex-1 overflow-y-auto divide-y divide-slate-100 md:divide-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-3 md:p-4 pb-20">
+                       {visibleMessages.length === 0 && (
+                         <li className="p-8 text-center text-slate-500 font-medium col-span-full">No messages found for the selected dates or search query.</li>
+                       )}
                        {visibleMessages.map((msg, idx) => {
                          const locked = isMessageLocked(msg);
                          return (
-                         <li key={msg.id} onClick={() => { if (locked) { setActiveTab('pro'); } else { setSelectedMessage(msg); } }} className={cn("px-5 py-4 flex flex-col hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 relative", locked && "opacity-60")}>
+                         <li key={msg.id} onClick={() => { if (locked) { setActiveTab('pro'); } else { setSelectedMessage(msg); } }} className={cn("px-5 py-4 md:py-3 md:px-4 md:border md:border-slate-100 md:rounded-xl md:shadow-sm bg-white flex flex-col hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 relative", locked && "opacity-60")}>
                             {locked && <div className="absolute top-4 right-5 text-amber-500"><Lock className="w-4 h-4"/></div>}
                             <div className="flex justify-between items-start mb-1.5 gap-2">
                                <span className="text-sm font-bold text-slate-900 line-clamp-1 flex-1">{msg.sender}</span>
@@ -1035,7 +1054,7 @@ export default function App() {
                 exit={{ opacity: 0, x: 20 }}
                 className="flex flex-col h-full bg-white relative overflow-hidden"
               >
-                {attachments.length > 0 ? (
+                {hasAnyAttachments ? (
                   <>
                     <div className="px-5 py-4 border-b border-slate-100 space-y-4 flex-shrink-0 bg-white z-10">
                       <div className="flex items-center justify-between">
@@ -1069,10 +1088,13 @@ export default function App() {
                     </div>
                     
                     <div className="flex-1 overflow-y-auto pb-28">
+                      {attachments.length === 0 && (
+                        <div className="p-8 text-center text-slate-500 font-medium">No files found for the selected dates.</div>
+                      )}
                       {attachmentGroupBy === 'none' ? (
-                        <ul className="divide-y divide-slate-100">
+                        <ul className="divide-y divide-slate-100 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:px-4">
                            {attachments.map((att, idx) => (
-                             <label key={idx} className="flex items-center px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
+                             <label key={idx} className="flex items-center px-5 py-4 md:py-3 md:px-4 md:border md:border-slate-100 md:rounded-xl md:shadow-sm bg-white hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
                                 <input type="checkbox" checked={selectedAttachments.has(att.filename)} onChange={() => toggleAttachmentSelection(att.filename)} className="w-5 h-5 rounded text-blue-600 border-slate-300 mr-4 flex-shrink-0" />
                                 <div className="flex-1 min-w-0 pr-4">
                                    <div className="text-sm font-medium text-slate-900 truncate">{att.filename}</div>
@@ -1093,9 +1115,9 @@ export default function App() {
                                  <span>{groupName}</span>
                                  <span>{groupAtts.length}</span>
                                </div>
-                               <ul className="divide-y divide-slate-100">
+                               <ul className="divide-y divide-slate-100 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:p-4">
                                  {groupAtts.map((att, idx) => (
-                                   <label key={idx} className="flex items-center px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
+                                   <label key={idx} className="flex items-center px-5 py-3 md:py-3 md:px-4 md:border md:border-slate-100 md:rounded-xl md:shadow-sm bg-white hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100">
                                       <input type="checkbox" checked={selectedAttachments.has(att.filename)} onChange={() => toggleAttachmentSelection(att.filename)} className="w-5 h-5 rounded text-blue-600 border-slate-300 mr-4 flex-shrink-0" />
                                       <div className="flex-1 min-w-0 pr-4">
                                          <div className="text-sm font-medium text-slate-900 truncate">{att.filename}</div>
@@ -1173,19 +1195,9 @@ export default function App() {
                                <CheckCircle2 className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" /> Unlock all features for 24 hours
                             </li>
                          </ul>
-                         {isMYSG && (
-                           <button onClick={() => handleUpgrade('day-pass', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-900 text-white shadow-md active:scale-95 transition-transform text-sm">
+                            <button onClick={() => handleUpgrade('day-pass')} className="w-full font-bold py-2.5 rounded-xl bg-slate-900 text-white shadow-md active:scale-95 transition-transform text-sm">
                              Get 24-Hour Access via Curlec
                            </button>
-                         )}
-                         <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                             <button onClick={() => handleUpgrade('day-pass', 'apple')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">🍎</span> App Store
-                             </button>
-                             <button onClick={() => handleUpgrade('day-pass', 'google')} className="flex-1 bg-slate-800 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">▶️</span> Google Play
-                             </button>
-                         </div>
                       </div>
 
                       {/* Monthly */}
@@ -1215,19 +1227,9 @@ export default function App() {
                               </li>
                             ))}
                          </ul>
-                         {isMYSG && (
-                           <button onClick={() => handleUpgrade('monthly', 'web')} className="w-full font-bold py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg active:scale-95 transition-transform text-sm flex items-center justify-center">
+                            <button onClick={() => handleUpgrade('monthly')} className="w-full font-bold py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg active:scale-95 transition-transform text-sm flex items-center justify-center">
                              Subscribe via Curlec <ChevronRight className="w-4 h-4 ml-1" />
                            </button>
-                         )}
-                         <div className="flex gap-2 mt-3 pt-3 border-t border-amber-200/50">
-                             <button onClick={() => handleUpgrade('monthly', 'apple')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">🍎</span> App Store
-                             </button>
-                             <button onClick={() => handleUpgrade('monthly', 'google')} className="flex-1 bg-black text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">▶️</span> Google Play
-                             </button>
-                         </div>
                       </div>
 
                       {/* Yearly */}
@@ -1240,19 +1242,9 @@ export default function App() {
                             </div>
                          </div>
                          <p className="text-sm text-slate-500 leading-relaxed mb-4 text-left">Best for professionals (lawyers, journalists, accountants) who handle archives regularly.</p>
-                         {isMYSG && (
-                           <button onClick={() => handleUpgrade('yearly', 'web')} className="w-full font-bold py-2.5 rounded-xl bg-slate-100 text-slate-800 shadow-sm hover:bg-slate-200 active:scale-95 transition-transform text-sm">
+                            <button onClick={() => handleUpgrade('yearly')} className="w-full font-bold py-2.5 rounded-xl bg-slate-100 text-slate-800 shadow-sm hover:bg-slate-200 active:scale-95 transition-transform text-sm">
                              Subscribe via Curlec
                            </button>
-                         )}
-                         <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                             <button onClick={() => handleUpgrade('yearly', 'apple')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">🍎</span> App Store
-                             </button>
-                             <button onClick={() => handleUpgrade('yearly', 'google')} className="flex-1 bg-slate-900 text-white text-[10px] font-semibold py-2 rounded-lg flex items-center justify-center active:scale-95 transition-transform">
-                                <span className="mr-1 mt-0.5">▶️</span> Google Play
-                             </button>
-                         </div>
                       </div>
                    </div>
                  )}
@@ -1314,6 +1306,83 @@ export default function App() {
         </nav>
 
         <PolicyModal policyType={policyType} onClose={() => setPolicyType(null)} />
+        
+        <AnimatePresence>
+          {showSplash && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-white"
+            >
+              <img src="/splash.png" alt="Splash Screen" className="w-full h-full object-cover" />
+              <button 
+                onClick={() => setShowSplash(false)}
+                className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-sm"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </motion.div>
+          )}
+
+          {showIcon && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center backdrop-blur-sm p-8"
+              onClick={() => setShowIcon(false)}
+            >
+              <div 
+                className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-8 max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-slate-800">App Icons</h3>
+                  <button 
+                    onClick={() => setShowIcon(false)}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-700">Standard Icon</h4>
+                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center">
+                      <img src="/icon.png" alt="App Icon" className="w-48 h-48 rounded-3xl shadow-md" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-700">Adaptive Foreground</h4>
+                    <div className="bg-slate-800 rounded-xl p-8 flex items-center justify-center">
+                      <img src="/icon-foreground.png" alt="App Icon Foreground" className="w-48 h-48" />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-700">Adaptive Background</h4>
+                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center">
+                      <img src="/icon-background.png" alt="App Icon Background" className="w-48 h-48 rounded-full shadow-inner" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-700">Adaptive Combined (Preview)</h4>
+                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center relative overflow-hidden">
+                      <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-lg border border-slate-200">
+                        <img src="/icon-background.png" alt="App Icon Background" className="absolute inset-0 w-full h-full object-cover" />
+                        <img src="/icon-foreground.png" alt="App Icon Foreground" className="absolute inset-0 w-full h-full object-cover scale-[0.65]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
