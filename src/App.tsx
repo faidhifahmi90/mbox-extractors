@@ -45,9 +45,6 @@ export default function App() {
   const [region, setRegion] = useState<'MY_SG' | 'ROW' | null>(null);
   const [policyType, setPolicyType] = useState<'EULA' | 'TERMS' | 'PRIVACY' | 'REFUND' | null>(null);
 
-  const [showSplash, setShowSplash] = useState(false);
-  const [showIcon, setShowIcon] = useState(false);
-
   React.useEffect(() => {
     checkTrialUsed().then(used => {
       setHasUsedTrial(used);
@@ -712,7 +709,7 @@ export default function App() {
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept=".mbox,.txt,.eml,.pst" className="hidden" />
                   <input type="file" ref={folderInputRef} onChange={handleFolderChange} {...({ webkitdirectory: "true", directory: "true" } as any)} className="hidden" />
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                  <div className="grid grid-cols-2 gap-4 w-full">
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all shadow-sm active:scale-95"
@@ -732,26 +729,6 @@ export default function App() {
                       </div>
                       <span className="font-semibold text-slate-800">Select Folder</span>
                       <span className="text-xs text-slate-500 mt-1">Batch Process</span>
-                    </div>
-                    <div 
-                      onClick={() => setShowSplash(true)}
-                      className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-pink-400 hover:bg-pink-50 transition-all shadow-sm active:scale-95"
-                    >
-                      <div className="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mb-3">
-                        <Eye className="w-6 h-6" />
-                      </div>
-                      <span className="font-semibold text-slate-800">Preview Splash</span>
-                      <span className="text-xs text-slate-500 mt-1">Dev Tools</span>
-                    </div>
-                    <div 
-                      onClick={() => setShowIcon(true)}
-                      className="flex-1 aspect-square max-h-40 border-2 border-dashed border-slate-300 rounded-2xl bg-white flex flex-col items-center justify-center p-4 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm active:scale-95"
-                    >
-                      <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3">
-                        <Crown className="w-6 h-6" />
-                      </div>
-                      <span className="font-semibold text-slate-800">Preview Icon</span>
-                      <span className="text-xs text-slate-500 mt-1">Dev Tools</span>
                     </div>
                   </div>
 
@@ -1306,83 +1283,6 @@ export default function App() {
         </nav>
 
         <PolicyModal policyType={policyType} onClose={() => setPolicyType(null)} />
-        
-        <AnimatePresence>
-          {showSplash && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-white"
-            >
-              <img src="/splash.png" alt="Splash Screen" className="w-full h-full object-cover" />
-              <button 
-                onClick={() => setShowSplash(false)}
-                className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-sm"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </motion.div>
-          )}
-
-          {showIcon && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center backdrop-blur-sm p-8"
-              onClick={() => setShowIcon(false)}
-            >
-              <div 
-                className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-8 max-h-[90vh] overflow-y-auto"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-slate-800">App Icons</h3>
-                  <button 
-                    onClick={() => setShowIcon(false)}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-700">Standard Icon</h4>
-                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center">
-                      <img src="/icon.png" alt="App Icon" className="w-48 h-48 rounded-3xl shadow-md" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-700">Adaptive Foreground</h4>
-                    <div className="bg-slate-800 rounded-xl p-8 flex items-center justify-center">
-                      <img src="/icon-foreground.png" alt="App Icon Foreground" className="w-48 h-48" />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-700">Adaptive Background</h4>
-                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center">
-                      <img src="/icon-background.png" alt="App Icon Background" className="w-48 h-48 rounded-full shadow-inner" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-700">Adaptive Combined (Preview)</h4>
-                    <div className="bg-slate-100 rounded-xl p-8 flex items-center justify-center relative overflow-hidden">
-                      <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-lg border border-slate-200">
-                        <img src="/icon-background.png" alt="App Icon Background" className="absolute inset-0 w-full h-full object-cover" />
-                        <img src="/icon-foreground.png" alt="App Icon Foreground" className="absolute inset-0 w-full h-full object-cover scale-[0.65]" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
