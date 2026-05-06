@@ -53,6 +53,25 @@ async function startServer() {
     }
   });
 
+  // Webhook Route for Razorpay/Curlec
+  app.post("/api/webhook", (req, res) => {
+    // Standard webhook handler setup
+    // You should verify the webhook signature here using process.env.RAZORPAY_WEBHOOK_SECRET
+    // Example: Razorpay.validateWebhookSignature(req.rawBody, signature, secret)
+    
+    console.log("Webhook received:", req.body);
+    
+    // Check the event type, e.g., 'payment.captured', 'order.paid'
+    const event = req.body.event;
+    if (event === 'payment.captured') {
+        console.log("Payment was successful!", req.body.payload.payment.entity);
+        // Fulfill the order, update database, etc.
+    }
+
+    // Always respond with 200 OK so Razorpay knows you got it
+    res.status(200).json({ status: 'ok' });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
